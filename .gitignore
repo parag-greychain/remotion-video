@@ -34,11 +34,10 @@ Thumbs.db
 # TypeScript
 *.tsbuildinfo
 
-# Misc
-*.log
-npm-debug.log*
-
 # Claude & Planning
 .claude/
 .planning/
-CLAUDE.md
+
+# Misc
+*.log
+npm-debug.log*
