@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# Remotion
+.remotion-bundle/
+
+# Rendered videos
+out/*.mp4
+
+# Uploads (user-uploaded images, not committed)
+public/uploads/*
+!public/uploads/.gitkeep
+
+# Screenshots (auto-generated)
+public/assets/screenshots/
+
+# Environment
+.env
+.env.local
+.env.production
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# TypeScript
+*.tsbuildinfo
+
+# Misc
+*.log
+npm-debug.log*
+
+# Claude & Planning
+.claude/
+.planning/
+CLAUDE.md
