@@ -1,23 +1,48 @@
 'use client';
 
-import {useState, useCallback} from 'react';
+import {useState, useCallback, useEffect} from 'react';
 import Link from 'next/link';
+import {useSearchParams} from 'next/navigation';
 import {Player} from '@remotion/player';
 import {DynamicComposition, calculateTotalDuration} from '@/src/templates/DynamicComposition';
 import {createDefaultProject, createDefaultScene, SCENE_TYPES} from '@/src/lib/types';
 import type {VideoProject, Scene, SceneConfig} from '@/src/lib/types';
+import {scrapeDataToProject} from '@/src/lib/url-to-project';
 import {SceneFormFields} from './SceneFormFields';
 import {SceneTypePicker} from './SceneTypePicker';
 import {ImageUpload} from './ImageUpload';
+import {VoiceoverPanel} from './VoiceoverPanel';
+import {MusicPanel} from './MusicPanel';
+
+function loadInitialProject(): VideoProject {
+	// Check if we have scrape data from URL-to-Video
+	if (typeof window !== 'undefined') {
+		const scrapeJson = sessionStorage.getItem('scrape-data');
+		if (scrapeJson) {
+			sessionStorage.removeItem('scrape-data');
+			try {
+				const scrapeData = JSON.parse(scrapeJson);
+				return scrapeDataToProject(scrapeData);
+			} catch {}
+		}
+	}
+	return createDefaultProject();
+}
 
 export function EditorContent({templateId}: {templateId: string}) {
-	const [project, setProject] = useState<VideoProject>(() => createDefaultProject());
+	const searchParams = useSearchParams();
+	const isFromUrl = searchParams.get('source') === 'url';
+	const [project, setProject] = useState<VideoProject>(() => loadInitialProject());
 	const [expandedScene, setExpandedScene] = useState<string | null>(project.scenes[0]?.id || null);
 	const [showPicker, setShowPicker] = useState(false);
 	const [rendering, setRendering] = useState(false);
 	const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+	const [exportFormat, setExportFormat] = useState<'mp4' | 'webm' | 'gif'>('mp4');
 	const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 	const [dragIndex, setDragIndex] = useState<number | null>(null);
+	const [voiceoverUrl, setVoiceoverUrl] = useState('');
+	const [musicUrl, setMusicUrl] = useState('');
+	const [musicVolume, setMusicVolume] = useState(0.3);
 
 	// Brand updates
 	const updateBrand = useCallback((patch: Partial<VideoProject['brand']>) => {
@@ -45,6 +70,19 @@ export function EditorContent({templateId}: {templateId: string}) {
 			return {...prev, scenes};
 		});
 		setExpandedScene((prev) => (prev === id ? null : prev));
+	}, []);
+
+	const duplicateScene = useCallback((id: string) => {
+		setProject((prev) => {
+			const idx = prev.scenes.findIndex((s) => s.id === id);
+			if (idx === -1) return prev;
+			const original = prev.scenes[idx];
+			const newId = `scene-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+			const clone: Scene = {id: newId, config: JSON.parse(JSON.stringify(original.config))};
+			const scenes = [...prev.scenes];
+			scenes.splice(idx + 1, 0, clone);
+			return {...prev, scenes};
+		});
 	}, []);
 
 	const moveScene = useCallback((fromIndex: number, toIndex: number) => {
@@ -86,7 +124,8 @@ export function EditorContent({templateId}: {templateId: string}) {
 				headers: {'Content-Type': 'application/json'},
 				body: JSON.stringify({
 					templateId: 'product-demo-v2',
-					props: {brand: project.brand, scenes: project.scenes},
+					props: {brand: project.brand, scenes: project.scenes, voiceoverUrl: voiceoverUrl || undefined, musicUrl: musicUrl || undefined, musicVolume},
+					format: exportFormat,
 				}),
 			});
 			if (!res.ok) {
@@ -122,12 +161,21 @@ export function EditorContent({templateId}: {templateId: string}) {
 				</div>
 				<div className="flex items-center gap-3">
 					{downloadUrl && (
-						<a href={downloadUrl} download="product-demo.mp4" className="px-5 py-2 rounded-lg bg-green-600 hover:bg-green-500 text-white font-medium text-sm transition-colors">
-							⬇ Download MP4
+						<a href={downloadUrl} download={`product-demo.${exportFormat}`} className="px-5 py-2 rounded-lg bg-green-600 hover:bg-green-500 text-white font-medium text-sm transition-colors">
+							⬇ Save File
 						</a>
 					)}
+					<select
+						value={exportFormat}
+						onChange={(e) => {setExportFormat(e.target.value as any); setDownloadUrl(null);}}
+						className="px-2 py-2 rounded-lg bg-weaved-surface border border-weaved-border text-weaved-light text-sm focus:outline-none"
+					>
+						<option value="mp4">MP4</option>
+						<option value="webm">WebM</option>
+						<option value="gif">GIF</option>
+					</select>
 					<button onClick={handleRender} disabled={rendering || project.scenes.length === 0} className="px-5 py-2 rounded-lg bg-gradient-to-r from-weaved-blue to-weaved-cyan text-white font-medium text-sm disabled:opacity-50 hover:shadow-lg hover:shadow-weaved-blue/20 transition-all">
-						{rendering ? 'Rendering...' : '🎬 Render Video'}
+						{rendering ? 'Preparing download...' : `⬇ Download ${exportFormat.toUpperCase()}`}
 					</button>
 				</div>
 			</header>
@@ -162,6 +210,12 @@ export function EditorContent({templateId}: {templateId: string}) {
 							</div>
 						</div>
 					</div>
+
+					{/* Voiceover */}
+					<VoiceoverPanel project={project} voiceoverUrl={voiceoverUrl} onVoiceoverChange={setVoiceoverUrl} />
+
+					{/* Background Music */}
+					<MusicPanel musicUrl={musicUrl} musicVolume={musicVolume} onMusicChange={setMusicUrl} onVolumeChange={setMusicVolume} />
 
 					{/* Scenes */}
 					<div className="p-5">
@@ -217,6 +271,13 @@ export function EditorContent({templateId}: {templateId: string}) {
 											</div>
 											{/* Actions */}
 											<button
+												onClick={(e) => {e.stopPropagation(); duplicateScene(scene.id);}}
+												className="w-7 h-7 rounded-lg bg-gray-100 text-gray-400 hover:bg-blue-50 hover:text-weaved-blue text-xs flex items-center justify-center transition-colors"
+												title="Duplicate scene"
+											>
+												⧉
+											</button>
+											<button
 												onClick={(e) => {e.stopPropagation(); removeScene(scene.id);}}
 												className="w-7 h-7 rounded-lg bg-gray-100 text-gray-400 hover:bg-red-50 hover:text-red-500 text-sm flex items-center justify-center transition-colors"
 												title="Remove scene"
@@ -247,7 +308,7 @@ export function EditorContent({templateId}: {templateId: string}) {
 					<div className="w-full max-w-4xl aspect-video rounded-xl overflow-hidden shadow-2xl shadow-black/50 border border-weaved-border">
 						<Player
 							component={DynamicComposition as any}
-							inputProps={{brand: project.brand, scenes: project.scenes}}
+							inputProps={{brand: project.brand, scenes: project.scenes, voiceoverUrl: voiceoverUrl || undefined, musicUrl: musicUrl || undefined, musicVolume}}
 							durationInFrames={totalDuration}
 							compositionWidth={1920}
 							compositionHeight={1080}
@@ -267,7 +328,7 @@ export function EditorContent({templateId}: {templateId: string}) {
 							<div className="h-2 bg-weaved-border rounded-full overflow-hidden">
 								<div className="h-full bg-gradient-to-r from-weaved-blue to-weaved-cyan rounded-full animate-pulse" style={{width: '100%'}} />
 							</div>
-							<p className="text-xs text-weaved-muted mt-2 text-center">Rendering video on server... This may take a moment.</p>
+							<p className="text-xs text-weaved-muted mt-2 text-center">Preparing your video for download... This may take a moment.</p>
 						</div>
 					)}
 				</div>

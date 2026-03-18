@@ -1,5 +1,5 @@
 import React from 'react';
-import {AbsoluteFill} from 'remotion';
+import {AbsoluteFill, Audio} from 'remotion';
 import {TransitionSeries, linearTiming} from '@remotion/transitions';
 import {fade} from '@remotion/transitions/fade';
 import type {VideoProject} from '../lib/types';
@@ -10,9 +10,12 @@ const TRANSITION_FRAMES = 15;
 interface DynamicCompositionProps {
 	brand: VideoProject['brand'];
 	scenes: VideoProject['scenes'];
+	voiceoverUrl?: string;
+	musicUrl?: string;
+	musicVolume?: number;
 }
 
-export const DynamicComposition: React.FC<DynamicCompositionProps> = ({brand, scenes}) => {
+export const DynamicComposition: React.FC<DynamicCompositionProps> = ({brand, scenes, voiceoverUrl, musicUrl, musicVolume = 0.3}) => {
 	if (!scenes || scenes.length === 0) {
 		return (
 			<AbsoluteFill style={{background: '#020204', justifyContent: 'center', alignItems: 'center'}}>
@@ -33,6 +36,8 @@ export const DynamicComposition: React.FC<DynamicCompositionProps> = ({brand, sc
 
 	return (
 		<AbsoluteFill>
+			{voiceoverUrl && <Audio src={voiceoverUrl} volume={1} />}
+			{musicUrl && <Audio src={musicUrl} volume={musicVolume} loop />}
 			<TransitionSeries>
 				{scenes.map((scene, index) => (
 					<React.Fragment key={scene.id}>

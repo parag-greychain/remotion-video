@@ -3,8 +3,8 @@ import path from 'path';
 import fs from 'fs';
 
 const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads');
-const MAX_SIZE = 10 * 1024 * 1024; // 10MB
-const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml', 'image/webp', 'image/gif'];
+const MAX_SIZE = 20 * 1024 * 1024; // 20MB
+const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml', 'image/webp', 'image/gif', 'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/webm'];
 
 export async function POST(request: NextRequest) {
 	try {

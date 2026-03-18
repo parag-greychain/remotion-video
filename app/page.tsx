@@ -1,8 +1,44 @@
 'use client';
 
+import {useState} from 'react';
 import Link from 'next/link';
+import {useRouter} from 'next/navigation';
 
 export default function Dashboard() {
+	const router = useRouter();
+	const [url, setUrl] = useState('');
+	const [scraping, setScraping] = useState(false);
+	const [error, setError] = useState('');
+
+	const handleUrlToVideo = async () => {
+		if (!url.trim()) return;
+		setScraping(true);
+		setError('');
+
+		try {
+			const res = await fetch('/api/scrape', {
+				method: 'POST',
+				headers: {'Content-Type': 'application/json'},
+				body: JSON.stringify({url: url.trim()}),
+			});
+
+			if (!res.ok) {
+				const data = await res.json();
+				setError(data.error || 'Failed to scrape URL');
+				return;
+			}
+
+			const scrapeData = await res.json();
+			// Store scraped data in sessionStorage and navigate to editor
+			sessionStorage.setItem('scrape-data', JSON.stringify(scrapeData));
+			router.push('/editor?template=product-demo-v2&source=url');
+		} catch (err: any) {
+			setError(err.message || 'Something went wrong');
+		} finally {
+			setScraping(false);
+		}
+	};
+
 	return (
 		<div className="min-h-screen">
 			{/* Header */}
@@ -19,7 +55,7 @@ export default function Dashboard() {
 			</header>
 
 			{/* Hero */}
-			<section className="px-8 py-16 text-center max-w-4xl mx-auto">
+			<section className="px-8 py-14 text-center max-w-4xl mx-auto">
 				<h1 className="text-5xl font-extrabold text-weaved-light mb-4 tracking-tight">
 					Create Professional Videos
 				</h1>
@@ -29,11 +65,69 @@ export default function Dashboard() {
 				<p className="text-sm text-weaved-muted">Add scenes, upload images, customize everything — no code needed.</p>
 			</section>
 
+			{/* URL-to-Video */}
+			<section className="px-8 pb-12 max-w-3xl mx-auto">
+				<div className="bg-weaved-card border border-weaved-border rounded-2xl p-8">
+					<div className="flex items-center gap-3 mb-4">
+						<span className="text-2xl">🔗</span>
+						<div>
+							<h2 className="text-lg font-bold text-weaved-light">URL to Video</h2>
+							<p className="text-sm text-weaved-muted">Paste any website URL — we'll auto-generate a video from it</p>
+						</div>
+					</div>
+
+					<div className="flex gap-3">
+						<input
+							type="text"
+							value={url}
+							onChange={(e) => {setUrl(e.target.value); setError('');}}
+							onKeyDown={(e) => e.key === 'Enter' && handleUrlToVideo()}
+							placeholder="https://example.com"
+							disabled={scraping}
+							className="flex-1 px-4 py-3 rounded-xl bg-weaved-surface border border-weaved-border text-weaved-light text-sm placeholder:text-weaved-muted/50 focus:border-weaved-blue focus:outline-none focus:ring-1 focus:ring-weaved-blue/30 transition-colors disabled:opacity-50"
+						/>
+						<button
+							onClick={handleUrlToVideo}
+							disabled={scraping || !url.trim()}
+							className="px-6 py-3 rounded-xl bg-gradient-to-r from-weaved-blue to-weaved-cyan text-white font-semibold text-sm disabled:opacity-50 hover:shadow-lg hover:shadow-weaved-blue/20 transition-all whitespace-nowrap"
+						>
+							{scraping ? (
+								<span className="flex items-center gap-2">
+									<span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+									Analyzing...
+								</span>
+							) : (
+								'Generate Video'
+							)}
+						</button>
+					</div>
+
+					{error && (
+						<p className="mt-3 text-sm text-red-400">{error}</p>
+					)}
+
+					{scraping && (
+						<div className="mt-4">
+							<div className="h-1.5 bg-weaved-border rounded-full overflow-hidden">
+								<div className="h-full bg-gradient-to-r from-weaved-blue to-weaved-cyan rounded-full animate-pulse" style={{width: '100%'}} />
+							</div>
+							<p className="text-xs text-weaved-muted mt-2">Scraping website content, extracting colors, taking screenshot...</p>
+						</div>
+					)}
+				</div>
+			</section>
+
+			{/* Divider */}
+			<div className="max-w-3xl mx-auto px-8 pb-8">
+				<div className="flex items-center gap-4">
+					<div className="flex-1 h-px bg-weaved-border" />
+					<span className="text-xs text-weaved-muted font-medium uppercase tracking-widest">or choose a template</span>
+					<div className="flex-1 h-px bg-weaved-border" />
+				</div>
+			</div>
+
 			{/* Templates */}
 			<section className="px-8 pb-20 max-w-6xl mx-auto">
-				<h2 className="text-lg font-semibold text-weaved-muted mb-6 uppercase tracking-widest">
-					Choose a Template
-				</h2>
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 					{/* V2 Product Demo — Featured */}
 					<Link
@@ -48,7 +142,7 @@ export default function Dashboard() {
 							Product Demo
 						</h3>
 						<p className="text-sm text-weaved-muted leading-relaxed">
-							10 scene types, drag & drop, image uploads, custom backgrounds. Fully customizable.
+							11 scene types, drag & drop, image uploads, custom backgrounds. Fully customizable.
 						</p>
 						<div className="mt-4 flex items-center gap-2 text-sm text-weaved-blue font-medium">
 							<span>Open Editor</span>

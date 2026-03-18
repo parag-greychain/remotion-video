@@ -34,20 +34,20 @@ export function BackgroundEditor({value, onChange}: BackgroundEditorProps) {
 
 			{/* Color inputs */}
 			{(value.type === 'solid' || value.type === 'gradient') && (
-				<div className="flex gap-3">
-					<div className="flex-1">
-						<label className="block text-xs text-gray-400 mb-1">{value.type === 'gradient' ? 'Start' : 'Color'}</label>
+				<div className="space-y-2">
+					<div className="min-w-0">
+						<label className="block text-xs text-gray-400 mb-1">{value.type === 'gradient' ? 'Start Color' : 'Color'}</label>
 						<div className="flex items-center gap-2">
-							<input type="color" value={value.color1} onChange={(e) => update({color1: e.target.value})} className="w-8 h-8 rounded border border-gray-200 cursor-pointer" />
-							<input type="text" value={value.color1} onChange={(e) => update({color1: e.target.value})} className="flex-1 px-2 py-1 rounded bg-white border border-gray-200 text-gray-700 text-xs" />
+							<input type="color" value={value.color1} onChange={(e) => update({color1: e.target.value})} className="w-8 h-8 shrink-0 rounded border border-gray-200 cursor-pointer" />
+							<input type="text" value={value.color1} onChange={(e) => update({color1: e.target.value})} className="w-full min-w-0 px-2 py-1 rounded bg-white border border-gray-200 text-gray-700 text-xs" />
 						</div>
 					</div>
 					{value.type === 'gradient' && (
-						<div className="flex-1">
-							<label className="block text-xs text-gray-400 mb-1">End</label>
+						<div className="min-w-0">
+							<label className="block text-xs text-gray-400 mb-1">End Color</label>
 							<div className="flex items-center gap-2">
-								<input type="color" value={value.color2} onChange={(e) => update({color2: e.target.value})} className="w-8 h-8 rounded border border-gray-200 cursor-pointer" />
-								<input type="text" value={value.color2} onChange={(e) => update({color2: e.target.value})} className="flex-1 px-2 py-1 rounded bg-white border border-gray-200 text-gray-700 text-xs" />
+								<input type="color" value={value.color2} onChange={(e) => update({color2: e.target.value})} className="w-8 h-8 shrink-0 rounded border border-gray-200 cursor-pointer" />
+								<input type="text" value={value.color2} onChange={(e) => update({color2: e.target.value})} className="w-full min-w-0 px-2 py-1 rounded bg-white border border-gray-200 text-gray-700 text-xs" />
 							</div>
 						</div>
 					)}
